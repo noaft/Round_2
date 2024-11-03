@@ -13,13 +13,13 @@ class NER_model:
             doc (str): The input text document from which to extract entities.
         
         Returns:
-            list: A list of tuples containing the extracted entities if their corresponding label is "Date".
+            list: A list of tuples containing the extracted entities if their corresponding label is "Date" and "Time.
         """
         doc_ = self.nlp(doc)
         result = []
         for ent in doc_.ents:
-            print(f"Text: {ent.text} -> Parsed Date: {ent.label_}")
-            result.append([ent.text, ent.label_])
+            if ent.label_ in ["DATE", "TIME"]:
+                result.append([ent.text, ent.label_])
 
 if __name__ == '__main__':
     # test

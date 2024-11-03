@@ -16,25 +16,41 @@ class QA_model:
         """
         # Get free time
         QA_free = {
-            'question' : 'When is the free time time in the passage?',
+            'question' : "When is the free time?",
             'context' : context 
         }
-        res = self.nlp(QA_free)
-        free_time = res['answer']
+        res_free = self.nlp(QA_free)
 
         # Get busy time
         QA_busy = {
-            'question' : 'When is the busy time time in the passage?',
+            'question' : "When is the busy time?",
             'context' : context 
         }
-        res = self.nlp(QA_busy)
-        busy_time = res['answer']
+        res_busy = self.nlp(QA_busy)
+  
+        return processing_time(res_free, res_busy)
 
-        return free_time , busy_time
+def processing_time(res_free, res_busy):
+    """
+    Extract real time user avaiable or not.
+    Args:
+        res_free (respone of pipline): respone of pipline for free time in parse.
+        res_busy : respone of pipline for busy time in parse.
+    Return:
+        Free time, Busy time
+    """
+    # Case of answer
+    if res_free['answer'] not in res_busy['answer'] or res_busy['answer'] not in res_free['answer']:
+        return res_free['answer'], res_busy['answer']
+    
+    if res_free['score'] >= res_busy['score'] :
+        return res_free['answer'], None
+    else:
+        return None, res_busy['answer']
 
 if __name__ == '__main__':
     model_name = "deepset/xlm-roberta-large-squad2"
     model = QA_model(model_name, model_name)
-    context = 'I am free on Tuesday afternoons and Thursday mornings, but I am unavailable every Monday and Wednesday, I have free time every night. Balancing our schedules will help maximize attendance.'
+    context = "My avaiable time includes Wednesday and Friday afternoons."
     free, busy = model.get_time(context)
     print( f"Free time: {free}, busy time: {busy}")
