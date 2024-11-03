@@ -16,14 +16,14 @@ class QA_model:
         """
         # Get free time
         QA_free = {
-            'question' : "When is any available free time",
+            'question' : "When is available during for do anything?",
             'context' : context 
         }
         res_free = self.nlp(QA_free)
 
         # Get busy time
         QA_busy = {
-            'question' : "When is the not free time?",
+            'question' : "When is unavailable?",
             'context' : context 
         }
         res_busy = self.nlp(QA_busy)
@@ -63,6 +63,6 @@ def processing_time(res_free, res_busy):
 if __name__ == '__main__':
     model_name = "deepset/xlm-roberta-large-squad2"
     model = QA_model(model_name, model_name)
-    context = "I'm already have a meeting booked on friday from 2 to 4 pm."
+    context = "I'm avaiable every morning from 9 to 11 AM, except on Wednesday."
     free, busy = model.get_time(context)
     print( f"Free time: {free}, busy time: {busy}")
