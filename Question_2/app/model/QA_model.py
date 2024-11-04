@@ -16,7 +16,7 @@ class QA_model:
         """
         # Get free time
         QA_free = {
-            'question' : "When is available during for do anything?",
+            'question' : "When is all time available in all time mentioned?",
             'context' : context 
         }
         res_free = self.nlp(QA_free)
@@ -29,6 +29,23 @@ class QA_model:
         res_busy = self.nlp(QA_busy)
   
         return processing_time(res_free, res_busy)
+
+    def get_day(self, text, time):
+        """
+        Get day for time.
+        Args:
+            text (str): is the passage want to get time.
+            time (str): is a unit time
+        Returns:
+            Time (str): day of time.
+        """
+        QA = {
+            'question' : f"What time period does time {time} belong to?",
+            'context' : text 
+        }   
+        res = self.nlp(QA)
+        return(res.get('answer'))
+
 
 def processing_time(res_free, res_busy):
     """
@@ -60,9 +77,19 @@ def processing_time(res_free, res_busy):
     else:
         return None, res_busy['answer']
 
+
 if __name__ == '__main__':
     model_name = "deepset/xlm-roberta-large-squad2"
     model = QA_model(model_name, model_name)
     context = "I'm avaiable every morning from 9 to 11 AM, except on Wednesday."
     free, busy = model.get_time(context)
     print( f"Free time: {free}, busy time: {busy}")
+
+    #
+    context = "I'm avaiable everymorning and every night from 2 to 10:11 am. and im can go meetting at Tuesday"
+    day  = model.get_day(context, "2 to 10:11 am")
+    print( f"Free time: {day}")
+    
+    context = "i am avaiable Monday 2 to 10:11 am, Tuesday 1 to 10 pm."
+    day  = model.get_day(context, "2 to 10:11 am")
+    print( f"Free time: {day}")
