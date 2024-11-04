@@ -132,11 +132,11 @@ def extract_time(time_string):
 
 if __name__ == '__main__':
     # test for hours
-    time_string = "every morning from 2  to 10:11 am."
+    time_string = "every morning from 2 to 10:11 am."
     start_time, end_time = extract_time(time_string)
     print("Start time:", start_time, "\nEnd time:", end_time)
     # test for day
-    time_string = "Monday and sunday from 2  to 10:11 am."
+    time_string = "Monday and sunday from 2 to 10:11 am."
     day = extract_day(time_string)
     print(day)
     # test for day
