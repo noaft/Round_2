@@ -130,6 +130,123 @@ def extract_time(time_string):
     else:
         return None, None
 
+
+def extract_one(message):
+    """
+    Extract availability and free time in text for each day of the week.
+    Args:
+        message (str): message from user
+    Return:
+        List[List[int]]: 2D list with day availability and free time in seconds
+    """
+    # Initialize a 2D array for the week (7 days)
+    week_availability = [[0, []] for _ in range(7)]  # [availability (0 or 1), free time in seconds list]
+
+    # Map days of the week to indices
+    days_map = {
+        'monday': 0,
+        'tuesday': 1,
+        'wednesday': 2,
+        'thursday': 3,
+        'friday': 4,
+        'saturday': 5,
+        'sunday': 6
+    }
+
+    # Extract recurrence and part recurrence
+    recurrence = extract_recurrence(message)
+    part_recurrence = extract_part_recurrence(message)
+    day_week = extract_day(message)
+
+    # If recurrence detected, mark all days as available
+    if recurrence:
+        week_availability = [[1, []] for _ in range(7)]
+
+    # For each day of the week, mark availability
+    for day in day_week:
+        if day in days_map:
+            week_availability[days_map[day]][0] = 1  # Mark as available
+
+    # Handle part recurrence to add free time in seconds
+    if part_recurrence:
+        for part in part_recurrence:
+            # Morning
+            if 'morning' in part:
+                for i in range(7):
+                    if week_availability[i][0] == 1:  # Check if available
+                        week_availability[i][1].append((6 * 3600, 11 * 3600 + 59 * 60))  # 6 AM to 11:59 AM
+            # Afternoon
+            elif 'afternoon' in part:
+                for i in range(7):
+                    if week_availability[i][0] == 1:  # Check if available
+                        week_availability[i][1].append((12 * 3600, 17 * 3600 + 59 * 60))  # 12 PM to 5:59 PM
+            # Evening
+            elif 'evening' in part:
+                for i in range(7):
+                    if week_availability[i][0] == 1:  # Check if available
+                        week_availability[i][1].append((18 * 3600, 21 * 3600 + 59 * 60))  # 6 PM to 9:59 PM
+            elif 'night' in part:
+                for i in range(7):
+                    if week_availability[i][0] == 1:  # Check if available
+                        week_availability[i][1].append((18 * 3600, 21 * 3600 + 59 * 60))  # 6 PM to 9:59 PM
+
+    if start_time:
+        # Transform data
+        start_time = caculate_time(start_time) 
+        end_time = caculate_time(end_time)
+    
+        for i in range(7):
+            if week_availability[i][0] == 1 and len(week_availability[i][1]) == 0:  # Check if available
+                week_availability[i][1].append((start_time, end_time))
+            elif week_availability[i][0] == 1 and check((start_time, end_time), week_availability[i][]) is False:
+
+                
+
+    return week_availability
+
+def check(range_new, list_range):
+    """
+    Check if a new range is available in a list of existing ranges.
+    
+    Args:
+        range_new (tuple): A tuple representing the new range (start, end).
+        list_range (list): A list of tuples, each representing an existing range (start, end).
+        
+    Returns:
+        bool: True if the new range is available, False if it overlaps with any existing range.
+    """
+    start_new, end_new = range_new
+    
+    for start_existing, end_existing in list_range:
+        # Check for overlap
+        if not (end_new <= start_existing or start_new >= end_existing):
+            return False  # Overlap detected
+    
+    return True  # No overlap found
+
+def caculate_time(start_time):
+    """
+    Transform str to int time
+    Args:
+        start_time (str): time needed tranform
+    return:
+        Time (int): time to tranform second
+    """
+    time = start_time.split(" ")[0]
+    time = time.split(":")
+    if len(time) == 2:
+        time = int(time[0]) * 3600 + int(time[1]) * 60
+    else len(time) == 3:
+        time = int(time[0]) * 3600 + int(time[1]) * 60 + int(time[2])
+    else:
+        time = int(time[0]) * 3600
+    
+    if 'pm' in start_time:
+        time += 12 * 3600
+    
+    return time
+
+    
 if __name__ == '__main__':
     # test for hours
     time_string = "every morning from 2 to 10:11 am."
