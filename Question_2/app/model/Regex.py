@@ -1,8 +1,54 @@
 import re
 from datetime import datetime
 
-def extract_time(time_string):
-    pass
+def extract_recurrence(time_string):
+    """
+    Extract recurrence of week from string.
+    Args:
+        time_string (str): string contain hours.
+    Return: 
+        [List] : List of string recurrence detected.
+    """
+    pattern = r'\b(everytime|every time|any time|any day|everyday|every day|each day|every weekday|all week|every single day|daily)\b'
+    match = re.findall(pattern, time_string.lower(), re.IGNORECASE)
+    
+    if match:
+        return match
+    else:
+        return None
+
+def extract_part_recurrence(time_string):
+    """
+    Extract recurrence of week from string.
+    Args:
+        time_string (str): string contain hours.
+    Return: 
+        [List] : List of string [art recurrence detected.
+    """
+    pattern = r'\b(everymorning|every morning|everyafternoon|every afternoon|everyevening|every evening|every night|everynight)\b'
+    match = re.findall(pattern, time_string.lower(), re.IGNORECASE)
+    
+    if match:
+        return match
+    else:
+        return None
+
+def extract_day(time_string):
+    """
+    Extract  days of week from string.
+    Args:
+        time_string (str): string contain hours.
+    Return: 
+        [List] :List of string days of week detected.
+    """
+
+    pattern = r'\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b'
+    match = re.findall(pattern, time_string.lower(), re.IGNORECASE)
+    
+    if match:
+        return match
+    else:
+        return None
 
 def clean_time(time_string):
     """
@@ -16,18 +62,18 @@ def clean_time(time_string):
     words = time_string.split()
     
     for word in words: 
-        # Kiểm tra nếu từ có chứa "am" hoặc "pm"
+        # Check if have 'am'or 'pm' in code
         if 'am' in word.lower() and word.lower() != 'am':
-            # Tách phần số và thêm "am"
             number_part = word.lower().split('am')[0]
-            ar_.append(number_part.strip())  # Thêm số đã tách
-            ar_.append('am')  # Thêm 'am'
+            ar_.append(number_part.strip())  # add to list
+            ar_.append('am')  # add to list
+        # Example: 3pm
         elif 'pm' in word.lower() and word.lower() != 'pm':
-            # Tách phần số và thêm "pm"
             number_part = word.lower().split('pm')[0]
-            ar_.append(number_part.strip())  # Thêm số đã tách
-            ar_.append('pm')  # Thêm 'pm'
-        elif word.strip():  # Nếu từ không phải là khoảng trắng
+            ar_.append(number_part.strip()) 
+            ar_.append('pm')  
+        # Remove last space in text if have
+        elif word.strip(): 
             ar_.append(word)
     
     result = " ".join(ar_).strip()  # Kết hợp lại và loại bỏ khoảng trắng ở đầu và cuối
@@ -68,7 +114,7 @@ def extract_time(time_string):
     Args:
         time_string (str): string contain hours.
     Return: 
-        Return hour detected.
+        Return string strt and end time detected.
     """
     
     # Regex to check valid time in 12-hour format
@@ -85,7 +131,19 @@ def extract_time(time_string):
         return None, None
 
 if __name__ == '__main__':
-    #test
+    # test for hours
     time_string = "every morning from 2  to 10:11 am."
     start_time, end_time = extract_time(time_string)
     print("Start time:", start_time, "\nEnd time:", end_time)
+    # test for day
+    time_string = "Monday and sunday from 2  to 10:11 am."
+    day = extract_day(time_string)
+    print(day)
+    # test for day
+    time_string = "everytime from 2  to 10:11 am."
+    recurrence = extract_recurrence(time_string)
+    print(recurrence)
+    # test for day
+    time_string = "everymorning and every night from 2  to 10:11 am."
+    recurrence = extract_part_recurrence(time_string)
+    print(recurrence)
