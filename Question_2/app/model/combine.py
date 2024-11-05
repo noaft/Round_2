@@ -1,6 +1,6 @@
-from model.Regex import extract_recurrence, extract_part_recurrence, extract_day, extract_time
+from Regex import extract_recurrence, extract_part_recurrence, extract_day, extract_time
 from datetime import datetime
-from model.QA_model import QA_model as model
+from QA_model import QA_model as model
 
 def detect_time(start_time, end_time, recurrence, day_week, part_recurrence):
     """
@@ -11,17 +11,17 @@ def detect_time(start_time, end_time, recurrence, day_week, part_recurrence):
         recurrence (str): recurrence in text
         day_week (str): each weekday mentioned in the text
     Returns:
-        List[[(1|0), ()], [], [], [], [], [], []]: A list where each inner list represents a day.
+        List: A list binary where each inner list represents a day.
         If a day has availability, the first element is 1, and the second element is a list of time ranges.
     """
 
     Time= [[0,[]] for _ in range(7)]
 
     map_ = {
-        'morning': (6 * 3600, 11 * 3600 + 59 * 60 + 59),      # 6:00 AM to 11:59:59 AM
-        'afternoon': (12 * 3600, 17 * 3600 + 59 * 60 + 59),    # 12:00 PM to 5:59:59 PM
-        'evening': (18 * 3600, 20 * 3600 + 59 * 60 + 59),      # 6:00 PM to 8:59:59 PM
-        'night': (21 * 3600, 23 * 3600 + 59 * 60 + 59)         # 9:00 PM to 11:59:59 PM
+        'morning': (6 * 60, 11 * 60 + 59),      # 6:00 AM to 11:59 AM
+        'afternoon': (12 * 60, 17 * 60 + 59),    # 12:00 PM to 5:59 PM
+        'evening': (18 * 60, 20 * 60 + 59),      # 6:00 PM to 8:59 PM
+        'night': (21 * 60, 23 * 60 + 59)         # 9:00 PM to 11:59 PM
     }
 
     # Map days of the week to indices
@@ -64,7 +64,7 @@ def detect_time(start_time, end_time, recurrence, day_week, part_recurrence):
     if start_time is None:
         for i in range(7):
             if Time[i][0] == 1:
-                Time[i][1].append((0, 86399))
+                Time[i][1].append((0, 1440))
 
     return Time
 
@@ -76,35 +76,14 @@ def subtract_intervals(free, busy):
         not_free (list of tuples): A list of unvaiable time.
 
     Returns:
-        list of tuples: A list of non-overlapping intervals from the `free` list after subtracting intervals from 
+        list of binary: A list of non-overlapping intervals from the `free` list after subtracting intervals from 
                         the `not_free` list.
     """
-    all_frees = [[0, []] for _ in range(7)]
-    for i in range(7):
-        all_free = []
-        if free[i][0] == 1 and busy[i][0] == 1: 
-            all_frees[i] = free[i]
-            for (start1, end1) in free[i][1]:
-                for (start2, end2 ) in busy[i][1]:
-                    # Check for overlap
-                    if start1 < start2 and start2 < end1:
-                        if end2 < end1:
-                            all_free.append((start1, start2 -1))
-                            all_free.append((end1, end2 - 1))
-                        else:
-                            all_free.append((start1, start2 - 1))
-                    elif start1 < end2 and end2 < end1:
-                        all_free.append(end2 + 1, end1)
-                    elif end1 < start2 and start1 > end2:
-                        continue
-                    else:
-                        all_free.append((0, 0))
-                        break
-                if all_free != []:
-                    all_frees[i][1] = all_free
-        
-        else: 
-            all_frees[i] = free[i] 
+
+    all_frees = [0 for _ in range(10080)]
+
+    for i in range(10080):
+        all_frees[i] = free[i] - busy[i]
     return all_frees
 
 def time_to_seconds(time_str):
@@ -127,7 +106,7 @@ def time_to_seconds(time_str):
         else:
             time_obj = datetime.strptime(time_str.strip(), '%I %p')  # Format without seconds    
         # Convert hours, minutes, and seconds to seconds
-        seconds = time_obj.hour * 3600 + time_obj.minute * 60 + time_obj.second
+        seconds = time_obj.hour * 60 + time_obj.minute
         return seconds
     except ValueError:
         print("Invalid time format. Please use 'hh:mm:ss AM/PM' or 'hh:mm AM/PM'.")
@@ -182,25 +161,70 @@ def extract_one(message, model, full_text):
                 for j in avaiables[i][1]:
                     avaiable_time[i][0] = 1
                     avaiable_time[i][1].append(j)                   
-
-    return avaiable_time
+    
+    return transform_binary(avaiable_time)
 
 def detect_avaiable(free, busy, model, context):
+    """
+    Get free time onion busy time:
+    Args:
+        free (List[[]]): free time.
+        busy (List[[]]): busy time.
+        model (class): model Nlp
+        context (str): context
+    Return:
+        List of free time in test
+    """
     if free and busy is None:
         return extract_one(free, model, context)
     elif free and busy:
         free_avaiable = extract_one(free, model, context)
         busy_time = extract_one(busy, model, context)
-        print (f"Free time : {free_avaiable} \n Busy: {busy_time}")
-        return subtract_intervals(free_avaiable, busy_time)
+        result = subtract_intervals(free_avaiable, busy_time)
+        return result
 
-    free_avaiable = [[1,[(0, 86399)]] for _ in range(7) ]
-    return subtract_intervals(free_avaiable, busy_time)
+    free_avaiable = [[1,[(0, 10080)]] for _ in range(7) ]
+    result = subtract_intervals(free_avaiable, busy_time)
+    return result
+
+def transform_binary(Time):
+    """
+    Transform all list to array binary.
+    Args:
+        time (List[[]]): list time avaiable
+    Return:
+        Return (List): [0,1,1,...] binary array
+    """
+    List = [0 for _ in range(10080)]
+    for i in range(7):
+        if Time[i][0] == 1:
+            for (start, end) in Time[i][1]:
+                for j in range(start + i * 1440, end + i * 1440):
+                    List[j] = 1
+    print(List)
+    return List
+
+
+def conflict_solution(*arg):
+    """
+    Detect and solotion conflict
+    Args:
+        arg: all of list time
+    return:
+        return all time not conflict and number can join
+    """
+    result = arg[0]
+    for i in range(1, len(arg)):
+        for j in range(10080):
+            result[j] +=  arg[i][j]
+    return result
 
 if __name__ == '__main__':
     model_name = "deepset/xlm-roberta-large-squad2"
     model = model(model_name, model_name)
-    context = "I'm avaiable every morning, except on Wednesday from 9 to 10 AM."
-    free, busy = model.get_time(context)
-    print(detect_avaiable(free, busy, model, context))
+    context1 = "I'm avaiable every morning, except on Wednesday from 9 to 10 AM."
+    context2 = "I'm avaiable every morning, except on Tuesday from"
+    free, busy = model.get_time(context1)
+    r = detect_avaiable(free, busy, model, context1)
+    print(r)
     # context = "i am avaiable Monday every time and Tuesday 1 to 10 pm."
