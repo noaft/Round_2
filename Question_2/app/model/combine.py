@@ -1,6 +1,6 @@
-from Regex import extract_recurrence, extract_part_recurrence, extract_day, extract_time
+from model.Regex import extract_recurrence, extract_part_recurrence, extract_day, extract_time
 from datetime import datetime
-from QA_model import QA_model as model
+from model.QA_model import QA_model as model
 
 def detect_time(start_time, end_time, recurrence, day_week, part_recurrence):
     """
@@ -36,14 +36,13 @@ def detect_time(start_time, end_time, recurrence, day_week, part_recurrence):
     }
 
     # If recurrence is true, mark all days as available
-    if recurrence:
+    if recurrence or part_recurrence:
         for i in range(7):
             Time[i][0] = 1
     else:
         # If specific days are mentioned, mark only those as available
         for day in day_week:
             if day in days_map:
-                print(days_map[day])
                 Time[days_map[day]][0] = 1
     
     # Add specific start and end times if provided
@@ -62,7 +61,51 @@ def detect_time(start_time, end_time, recurrence, day_week, part_recurrence):
                     if Time[i][0] == 1:
                         Time[i][1].append(map_[part])
 
+    if start_time is None:
+        for i in range(7):
+            if Time[i][0] == 1:
+                Time[i][1].append((0, 86399))
+
     return Time
+
+def subtract_intervals(free, busy):
+    """
+    Subtracts intervals from a list of available (free) intervals using a list of unavailable (not_free) intervals.
+    Args:
+        free (list of tuples): A list of available time.
+        not_free (list of tuples): A list of unvaiable time.
+
+    Returns:
+        list of tuples: A list of non-overlapping intervals from the `free` list after subtracting intervals from 
+                        the `not_free` list.
+    """
+    all_frees = [[0, []] for _ in range(7)]
+    for i in range(7):
+        all_free = []
+        if free[i][0] == 1 and busy[i][0] == 1: 
+            all_frees[i] = free[i]
+            for (start1, end1) in free[i][1]:
+                for (start2, end2 ) in busy[i][1]:
+                    # Check for overlap
+                    if start1 < start2 and start2 < end1:
+                        if end2 < end1:
+                            all_free.append((start1, start2 -1))
+                            all_free.append((end1, end2 - 1))
+                        else:
+                            all_free.append((start1, start2 - 1))
+                    elif start1 < end2 and end2 < end1:
+                        all_free.append(end2 + 1, end1)
+                    elif end1 < start2 and start1 > end2:
+                        continue
+                    else:
+                        all_free.append((0, 0))
+                        break
+                if all_free != []:
+                    all_frees[i][1] = all_free
+        
+        else: 
+            all_frees[i] = free[i] 
+    return all_frees
 
 def time_to_seconds(time_str):
     """
@@ -117,15 +160,22 @@ def extract_one(message, model, full_text):
     part_recurrence = extract_part_recurrence(message)
     # day_week = extract_day(message)
     list_time, full_time = extract_time(message)
-    print(len(list_time))
-    if len(list_time) != 0:
+    if list_time != [None , None]:
         for i in range(len(list_time)):
             start_time = list_time[i][0]
             end_time = list_time[i][1]
             day_week = extract_day(model.get_day(full_text, full_time[i]))
-            recurrence = extract_recurrence(message)
-            avaiable_time_fake.append(detect_time(start_time, end_time, recurrence, day_week, part_recurrence))
-    
+            if day_week:
+                recurrence = extract_recurrence(message)
+                avaiable_time_fake.append(detect_time(start_time, end_time, recurrence, day_week, part_recurrence))
+            else:
+                recurrence = extract_recurrence(message)
+                avaiable_time_fake.append(detect_time(start_time, end_time, recurrence, None, part_recurrence))
+    else:
+        recurrence = extract_recurrence(message)
+        day_week = extract_day(message)
+        avaiable_time_fake.append(detect_time(None, None, recurrence, day_week, part_recurrence))
+
     for avaiables in avaiable_time_fake:
         for i in range(7):
             if avaiables[i][0] == 1:
@@ -135,12 +185,22 @@ def extract_one(message, model, full_text):
 
     return avaiable_time
 
+def detect_avaiable(free, busy, model, context):
+    if free and busy is None:
+        return extract_one(free, model, context)
+    elif free and busy:
+        free_avaiable = extract_one(free, model, context)
+        busy_time = extract_one(busy, model, context)
+        print (f"Free time : {free_avaiable} \n Busy: {busy_time}")
+        return subtract_intervals(free_avaiable, busy_time)
+
+    free_avaiable = [[1,[(0, 86399)]] for _ in range(7) ]
+    return subtract_intervals(free_avaiable, busy_time)
+
 if __name__ == '__main__':
     model_name = "deepset/xlm-roberta-large-squad2"
     model = model(model_name, model_name)
-    context = "i am avaiable Monday 2 to 10:11 am and Tuesday 1 to 10 pm."
+    context = "I'm avaiable every morning, except on Wednesday from 9 to 10 AM."
     free, busy = model.get_time(context)
-    print(extract_one(free, model, context))
+    print(detect_avaiable(free, busy, model, context))
     # context = "i am avaiable Monday every time and Tuesday 1 to 10 pm."
-    # free, busy = model.get_time(context)
-    # print(extract_one(free, model, context))

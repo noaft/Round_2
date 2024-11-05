@@ -121,16 +121,14 @@ def extract_time(time_string):
     pattern = r"((([1-9]|1[0-2])(:[0-5][0-9])?\s?(am|pm)?)\s?to\s(([1-9]|1[0-2])(:[0-5][0-9])?\s?(am|pm)?\s))"
     # add space for fit pattern
     time = time_string.split('.')[0]
+    time = time_string.split(',')[0]
     time += " "
     # Search for the time pattern in the string
     match = re.findall(pattern, time.lower(), re.IGNORECASE)
     list_day= []
     SE_ = []
-    print(match)
     if match:
-        print(1)
         for time_str in match:
-            print(time_str)
             list_day.append(get_start_end(time_str[0]))
             SE_.append(time_str[0])
     if match:

@@ -16,18 +16,18 @@ class QA_model:
         """
         # Get free time
         QA_free = {
-            'question' : "When is all time available in all time mentioned?",
+            'question' : "When is available time during for scheduling meeting in free time?",
             'context' : context 
         }
         res_free = self.nlp(QA_free)
 
         # Get busy time
         QA_busy = {
-            'question' : "When is unavailable?",
+            'question' : "When is unavailable time during for scheduling meeting in free time?",
             'context' : context 
         }
         res_busy = self.nlp(QA_busy)
-  
+        print(res_free , res_busy)
         return processing_time(res_free, res_busy)
 
     def get_day(self, text, time):
@@ -58,8 +58,6 @@ def processing_time(res_free, res_busy):
     """
 
     # Check score confident
-    print(res_free['score'], res_busy['score'])
-    print(res_free['answer'], res_busy['answer'])
     if res_free['score'] < 0.01 or res_busy['score'] < 0.01:
         if res_free['score'] < 0.01 and res_busy['score'] < 0.01:
             return None, None 
