@@ -24,10 +24,9 @@ document.addEventListener("DOMContentLoaded", function() {
         // Collect input values
         const hours = document.getElementById('hours').value;
         const minutes = document.getElementById('minutes').value;
-        const seconds = document.getElementById('seconds').value;
 
         // Combine the time values into a message
-        const timeMessage = `Meeting Duration: ${hours}h ${minutes}m ${seconds}s`;
+        const timeMessage = `${hours} ${minutes}`;
         
         // Create and append the new message element
         const allMessages = document.querySelectorAll('.chat-messages .message');

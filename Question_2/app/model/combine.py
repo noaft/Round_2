@@ -176,16 +176,33 @@ def detect_avaiable(free, busy, model, context):
         List of free time in test
     """
     if free and busy is None:
-        return extract_one(free, model, context)
+        result = extract_one(free, model, context)
+        r_ = result[540:1020] # 9 am -> 5 pm
+        for i in range(1, 7):
+            start = i * 1440 + 540
+            end = i * 1440 + 1020
+            r_ += result[start:end]
+        return r_
     elif free and busy:
         free_avaiable = extract_one(free, model, context)
         busy_time = extract_one(busy, model, context)
         result = subtract_intervals(free_avaiable, busy_time)
-        return result
+        r_ = result[540:1020] # 9 am -> 5 pm
+        for i in range(1, 7):
+            start = i * 1440 + 540
+            end = i * 1440 + 1020
+            r_ += result[start:end]
+        return r_
 
     free_avaiable = [[1,[(0, 10080)]] for _ in range(7) ]
     result = subtract_intervals(free_avaiable, busy_time)
-    return result
+    print(result)
+    r_ = result[540:1020] # 9 am -> 5 pm
+    for i in range(1, 7):
+        start = i * 1440 + 540
+        end = i * 1440 + 1020
+        r_ += result[start:end]
+    return r_
 
 def transform_binary(Time):
     """
@@ -201,11 +218,37 @@ def transform_binary(Time):
             for (start, end) in Time[i][1]:
                 for j in range(start + i * 1440, end + i * 1440):
                     List[j] = 1
-    print(List)
     return List
 
+def multi_user(model, messages, time):
+    """
+    Extract and combine time of all user
+    Args: 
+        messages List(str): all message of user
+    Return:
+        Return combine time list
+    """
+    list_time = []
+    len_user = len(messages)
+    for message in messages:
+        free, busy = get_free_busy(model, message)
+        list_time.append(detect_avaiable(free, busy, model, message))
+    return find(time, all_time(list_time), len_user)
+    
 
-def conflict_solution(*arg):
+def get_free_busy(model, context):
+    """
+    Get time free and busy of user
+    Args:
+        model (class): model NLU
+        context: message of user
+    Return:
+        List free time and busy time
+    """
+    free, busy = model.get_time(context)
+    return free, busy
+
+def all_time(list_time):
     """
     Detect and solotion conflict
     Args:
@@ -213,18 +256,55 @@ def conflict_solution(*arg):
     return:
         return all time not conflict and number can join
     """
-    result = arg[0]
-    for i in range(1, len(arg)):
-        for j in range(10080):
-            result[j] +=  arg[i][j]
+    result = list_time[0]
+    print(result)
+    for i in range(1, len(list_time)):
+        for j in range(3360):
+            result[j] +=  list_time[i][j]
     return result
+
+def find(time, list_time, len_user):
+    """
+    Get time match metting time in free time.
+    Args:
+        time (int): time meeting.
+        list_time (list(int)): List time avaiable.
+    Reuturn
+        list time list([index]).
+        index of start time invaiable.
+    """
+    result = [[] for _ in range(7)]
+    len_user_ = len_user
+    st = 0
+    ed = 480
+    list_time_ = []
+    for i in range(7):
+        list_time_.append((list_time[st:ed]))
+        st = ed
+        ed += 480
+    print(list_time_)
+    while len_user_ > 0:
+        for list in range(len(list_time_)):
+            flag = 0
+            for i in range(480 - time):
+                for j in range(time):
+                    if list_time_[list][i + j] < len_user_:
+                        flag = 1
+                        break
+                if flag == 0:
+                    result[list].append(i)
+
+        if result != [[] for _ in range(7)]:
+            return result
+        len_user -= 1
+
+    return result 
 
 if __name__ == '__main__':
     model_name = "deepset/xlm-roberta-large-squad2"
     model = model(model_name, model_name)
-    context1 = "I'm avaiable every morning, except on Wednesday from 9 to 10 AM."
-    context2 = "I'm avaiable every morning, except on Tuesday from"
-    free, busy = model.get_time(context1)
-    r = detect_avaiable(free, busy, model, context1)
+    context1 = "I'm avaiable every morning."
+    context2 = "I'm avaiable every morning, except on Tuesday"
+    list= [context1, context2]
+    r = multi_user(model, list, 300)
     print(r)
-    # context = "i am avaiable Monday every time and Tuesday 1 to 10 pm."

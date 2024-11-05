@@ -28,8 +28,5 @@ app.include_router(router)
 async def page(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-model_name = "deepset/xlm-roberta-large-squad2"
-model = model(model_name, model_name)
-
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
