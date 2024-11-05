@@ -1,6 +1,6 @@
-from Regex import extract_recurrence, extract_part_recurrence, extract_day, extract_time
+from model.Regex import extract_recurrence, extract_part_recurrence, extract_day, extract_time
 from datetime import datetime
-from QA_model import QA_model as model
+from model.QA_model import QA_model as model
 
 def detect_time(start_time, end_time, recurrence, day_week, part_recurrence):
     """
