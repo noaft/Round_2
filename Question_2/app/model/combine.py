@@ -184,6 +184,7 @@ def detect_avaiable(free, busy, model, context):
             r_ += result[start:end]
         return r_
     elif free and busy:
+        print(busy)
         free_avaiable = extract_one(free, model, context)
         busy_time = extract_one(busy, model, context)
         result = subtract_intervals(free_avaiable, busy_time)
@@ -193,7 +194,9 @@ def detect_avaiable(free, busy, model, context):
             end = i * 1440 + 1020
             r_ += result[start:end]
         return r_
-
+    if free is None and busy is None:
+        r_ = [[0] for _ in range(3360)]
+        return r_
     free_avaiable = [[1,[(0, 10080)]] for _ in range(7) ]
     result = subtract_intervals(free_avaiable, busy_time)
     print(result)

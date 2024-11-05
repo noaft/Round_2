@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function() {
         data.forEach((dayData, index) => {
             const dayElement = document.createElement("div")
             dayElement.classList.add("day")
-            const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const daysOfWeek = [ "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
             const dayName = daysOfWeek[index]
             // If there is no data for the day, mark it accordingly
             if (dayData[0] === -1) {
@@ -122,4 +122,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }    
+    calendarContainer.addEventListener('click',function() {
+        calendarContainer.style.display = "none"
+    })
 });
